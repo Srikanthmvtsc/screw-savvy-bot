@@ -14,7 +14,109 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      document_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          document_id: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          chunk_index: number
+          content: string
+          created_at?: string
+          document_id: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          file_name: string
+          file_size: number | null
+          id: string
+          processing_status: string | null
+          storage_path: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          id?: string
+          processing_status?: string | null
+          storage_path?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          processing_status?: string | null
+          storage_path?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      embeddings: {
+        Row: {
+          chunk_id: string
+          created_at: string
+          embedding: Json
+          id: string
+        }
+        Insert: {
+          chunk_id: string
+          created_at?: string
+          embedding: Json
+          id?: string
+        }
+        Update: {
+          chunk_id?: string
+          created_at?: string
+          embedding?: Json
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embeddings_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: false
+            referencedRelation: "document_chunks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
