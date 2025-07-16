@@ -25,37 +25,100 @@ const ChatPage = () => {
   const [inputMessage, setInputMessage] = useState("");
   const { toast } = useToast();
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
+    const query = inputMessage;
+    
     // Add user message
     const userMessage: Message = {
       id: messages.length + 1,
-      text: inputMessage,
+      text: query,
       sender: 'user',
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-
-    // Simulate bot response (in real app, this would call your LLM)
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: messages.length + 2,
-        text: "I'd love to help you with that! However, I need to be connected to Supabase and configured with Llama 2 7B to provide accurate screw recommendations. Please connect the backend integration to enable full chat functionality.",
-        sender: 'bot',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, botMessage]);
-    }, 1000);
-
     setInputMessage("");
+
+    // Add loading message
+    const loadingMessage: Message = {
+      id: messages.length + 2,
+      text: "Thinking...",
+      sender: 'bot',
+      timestamp: new Date()
+    };
     
-    toast({
-      title: "Backend Integration Required",
-      description: "Connect to Supabase to enable AI-powered chat functionality.",
-      duration: 3000,
-    });
+    setMessages(prev => [...prev, loadingMessage]);
+
+    try {
+      const response = await fetch('http://localhost:5000/chat-query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      const result = await response.json();
+
+      // Remove loading message and add actual response
+      setMessages(prev => {
+        const filtered = prev.filter(msg => msg.text !== "Thinking...");
+        const botMessage: Message = {
+          id: prev.length + 1,
+          text: result.success ? result.response : (result.fallback_response || result.error),
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        return [...filtered, botMessage];
+      });
+
+    } catch (error) {
+      // Remove loading message and add error response
+      setMessages(prev => {
+        const filtered = prev.filter(msg => msg.text !== "Thinking...");
+        const errorMessage: Message = {
+          id: prev.length + 1,
+          text: "Sorry, I'm having trouble connecting to the server. Please make sure the Flask backend is running on localhost:5000.",
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        return [...filtered, errorMessage];
+      });
+    }
+  };
+
+  const handleFeedback = async (botResponse: string, feedbackType: 'positive' | 'negative') => {
+    try {
+      const lastUserMessage = messages.filter(m => m.sender === 'user').pop();
+      
+      await fetch('http://localhost:5000/save-feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: lastUserMessage?.text || '',
+          wrong_answer: feedbackType === 'negative' ? botResponse : null,
+          correct_answer: null,
+          user_feedback: feedbackType === 'positive' ? 'helpful' : 'not helpful'
+        }),
+      });
+
+      toast({
+        title: "Feedback Saved",
+        description: "Thank you for your feedback! This helps improve our responses.",
+        duration: 3000,
+      });
+    } catch (error) {
+      toast({
+        title: "Feedback Error",
+        description: "Failed to save feedback. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -103,17 +166,37 @@ const ChatPage = () => {
                     </div>
                   )}
                   
-                  <div
+                   <div
                     className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3 rounded-lg ${
                       message.sender === 'user'
                         ? 'bg-gradient-primary text-primary-foreground'
                         : 'bg-muted'
                     }`}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                     <span className="text-xs opacity-70 mt-1 block">
                       {message.timestamp.toLocaleTimeString()}
                     </span>
+                    {message.sender === 'bot' && message.text !== "Thinking..." && (
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleFeedback(message.text, 'positive')}
+                          className="text-xs"
+                        >
+                          👍 Helpful
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleFeedback(message.text, 'negative')}
+                          className="text-xs"
+                        >
+                          👎 Not helpful
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   
                   {message.sender === 'user' && (

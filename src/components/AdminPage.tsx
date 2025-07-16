@@ -17,12 +17,41 @@ const AdminPage = () => {
     { id: 3, name: "Drywall Installation Screws.pdf", uploadDate: "2024-12-05", size: "1.8 MB" },
   ]);
 
-  const handleFileUpload = () => {
-    toast({
-      title: "Backend Integration Required",
-      description: "Connect to Supabase to enable PDF upload functionality.",
-      duration: 5000,
-    });
+  const handleFileUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      toast({
+        title: "Processing PDF",
+        description: "Uploading and processing your PDF file...",
+        duration: 3000,
+      });
+
+      const response = await fetch('http://localhost:5000/process-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: "PDF Processed Successfully",
+          description: `Created ${result.chunks_processed} chunks and ${result.embeddings_created} embeddings.`,
+          duration: 5000,
+        });
+      } else {
+        throw new Error(result.error || 'Failed to process PDF');
+      }
+    } catch (error) {
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Failed to upload PDF",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
   };
 
   const handleDelete = (pdfName: string) => {
@@ -73,8 +102,20 @@ const AdminPage = () => {
               <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-lg font-medium mb-2">Drag and drop files here</h3>
               <p className="text-muted-foreground mb-4">or click to browse</p>
-              <Button onClick={handleFileUpload} className="bg-gradient-primary">
-                Select Files
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(file);
+                }}
+                className="hidden"
+                id="file-upload"
+              />
+              <Button asChild className="bg-gradient-primary">
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  Select Files
+                </label>
               </Button>
             </div>
           </CardContent>

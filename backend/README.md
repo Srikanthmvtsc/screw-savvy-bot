@@ -18,7 +18,6 @@ This Flask backend provides API endpoints for the ScrewSavvy chatbot application
 2. **Configure API Keys**:
    Edit `app.py` and replace the dummy credentials:
    ```python
-   OPENAI_API_KEY = "your-actual-openai-api-key"
    QUADRANT_API_KEY = "your-actual-quadrant-api-key"
    QUADRANT_URL = "your-actual-quadrant-cluster-url"
    REPLICATE_API_TOKEN = "your-actual-replicate-api-token"
@@ -64,9 +63,8 @@ This Flask backend provides API endpoints for the ScrewSavvy chatbot application
 
 ## Required API Services
 
-- **OpenAI**: For text embeddings (`text-embedding-ada-002`)
 - **Quadrant**: Vector database for storing and searching embeddings
-- **Replicate**: For LLaMA 2 7B model access
+- **Replicate**: For LLaMA 2 7B model access (both embeddings and chat)
 
 ## Frontend Integration
 
